@@ -16,6 +16,9 @@ class Editor(QObject):
         self._WriteModule()
         import temp
         self.module = temp
+        self.textChanged = False
+        self.lineChanged = False
+        self.changeTime = QtCore.QTime()
 
     def Setup( self, parentWidget ):
         editor = QsciScintilla( parentWidget )
@@ -48,13 +51,52 @@ class Editor(QObject):
         editor.setTabWidth( 4 )
 
         self.editor = editor
-        self.editor.linesChanged.connect( self.OnChange )
+
+        self.editor.linesChanged.connect( self.OnLineChange )
+        self.editor.textChanged.connect( self.OnChange )
+
+        timer = QtCore.QTimer( self )
+        timer.timeout.connect( self.OnTick )
+        timer.start( 500 )
 
     changeImage = QtCore.pyqtSignal( 'QString' )
 
     @QtCore.pyqtSlot()
     def OnChange( self ):
+        '''
+        Called when the text is changed
+        '''
+        self.textChanged = True
+        self.changeTime.restart()
+
+    @QtCore.pyqtSlot()
+    def OnLineChange( self ):
+        '''Called when the line is changed '''
+        self.lineChanged = True
+
+    @QtCore.pyqtSlot()
+    def OnTick( self ):
+        '''
+        Tick handler for timer
+        '''
+        if self.textChanged:
+            if self.lineChanged:
+                self.DoUpdate()
+            else:
+                msecsPassed = self.changeTime.msecsTo( 
+                        QtCore.QTime.currentTime() 
+                        )
+                if msecsPassed > 500:
+                    self.DoUpdate()
+        pass
+                   
+    def DoUpdate( self ):
+        '''
+        Writes & reloads the module
+        '''
         # TODO: Check syntax etc.
+        self.lineChanged = False
+        self.textChanged = False
         s = self.editor.text()
         self._WriteModule( s )
         if self._ReloadModule():
@@ -64,7 +106,7 @@ class Editor(QObject):
             except AttributeError:
                 # img probably just doesn't exist
                 pass
-                    
+
    
     def _WriteModule( self, code=None ):
         '''
