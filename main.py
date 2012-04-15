@@ -89,22 +89,48 @@ class Editor(QObject):
         except:
             return False
 
+class PyVisWindow(QtGui.QMainWindow):
+    def __init__( self ):
+        super( PyVisWindow, self ).__init__()
+
+        self._InitUi()
+
+    @QtCore.pyqtSlot('QString')
+    def SetImage( self, img ):
+        self.image.load( img )
+
+    def _InitUi( self ):
+        exitAction = QtGui.QAction( QtGui.QIcon( 'exit.png' ), '&Exit', self )
+        exitAction.setShortcut( 'Ctrl+Q' )
+        exitAction.setStatusTip( 'Exit application' )
+        exitAction.triggered.connect( QtGui.qApp.quit )
+
+        self.statusBar()
+        
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu( '&File' )
+        fileMenu.addAction( exitAction )
+        
+        self.resize( 1024, 768 )
+        self.setWindowTitle( 'PyVis' )
+
+        self.editor = Editor()
+        self.editor.Setup( self )
+        self.editor.changeImage.connect( self.SetImage )
+
+        self.image = QtSvg.QSvgWidget( 'Broom_icon.svg', self )
+        self.image.move( 512, 0 )
+        self.image.resize( self.image.sizeHint() )
+        
+        self.show()
+
 
 if __name__ == "__main__":
     logging.basicConfig( level=logging.DEBUG )
     # Create Qt application and the QDeclarative view
     app = QApplication(sys.argv)
 
-    w = QtGui.QWidget()
-    w.resize( 1024, 768 )
-    w.setWindowTitle( 'PyVis' )
+    w = PyVisWindow()
 
-    e = Editor()
-    e.Setup( w )
-
-    image = QtSvg.QSvgWidget( 'Broom_icon.svg', w )
-    image.move( 512, 0 )
-
-    w.show()
     # Enter Qt main loop
     sys.exit(app.exec_())
