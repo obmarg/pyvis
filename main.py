@@ -22,7 +22,8 @@ class Editor(QObject):
 
     def Setup( self, parentWidget ):
         editor = QsciScintilla( parentWidget )
-        editor.resize( 512, 768 ) 
+        size = parentWidget.size()
+        editor.resize( size.width() / 2, size.height() ) 
         
         # Set up the font
         font = QtGui.QFont()
@@ -140,6 +141,7 @@ class PyVisWindow(QtGui.QMainWindow):
     @QtCore.pyqtSlot('QString')
     def SetImage( self, img ):
         self.image.load( img )
+        self.image.resize( self.image.sizeHint() )
 
     def _InitUi( self ):
         exitAction = QtGui.QAction( QtGui.QIcon( 'exit.png' ), '&Exit', self )
@@ -156,12 +158,16 @@ class PyVisWindow(QtGui.QMainWindow):
         self.resize( 1024, 768 )
         self.setWindowTitle( 'PyVis' )
 
+        container = QtGui.QWidget()
+        container.resize( 1024, 768 )
+        self.setCentralWidget( container )
+
         self.editor = Editor()
-        self.editor.Setup( self )
+        self.editor.Setup( container )
         self.editor.changeImage.connect( self.SetImage )
 
         self.image = QtSvg.QSvgWidget( 'Broom_icon.svg', self )
-        self.image.move( 512, 0 )
+        self.image.move( self.editor.editor.size().width(), 0 )
         self.image.resize( self.image.sizeHint() )
         
         self.show()
